@@ -1,5 +1,5 @@
 {
-	"name": "@3sixty/immutable-proof",
+	"name": "3sixty-immutable-proof",
 	"version": "0.0.0",
 	"description": "Repository for immutable proof models, processing, services, and client integration",
 	"repository": {
