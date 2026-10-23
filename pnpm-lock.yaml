@@ -327,7 +327,7 @@ importers:
         specifier: next
         version: 0.20.0-next.2
       '@3sixty/immutable-proof-models':
-        specifier: 0.20.0-next.0
+        specifier: 0.20.0-next.1
         version: link:../immutable-proof-models
       '@3sixty/nameof':
         specifier: next
@@ -409,10 +409,10 @@ importers:
         specifier: next
         version: 0.20.0-next.1
       '@3sixty/immutable-proof-models':
-        specifier: 0.20.0-next.0
+        specifier: 0.20.0-next.1
         version: link:../immutable-proof-models
       '@3sixty/immutable-proof-task':
-        specifier: 0.20.0-next.0
+        specifier: 0.20.0-next.1
         version: link:../immutable-proof-task
       '@3sixty/logging-models':
         specifier: next
@@ -518,7 +518,7 @@ importers:
         specifier: next
         version: 0.20.0-next.1
       '@3sixty/immutable-proof-models':
-        specifier: 0.20.0-next.0
+        specifier: 0.20.0-next.1
         version: link:../immutable-proof-models
       '@3sixty/logging-models':
         specifier: next
