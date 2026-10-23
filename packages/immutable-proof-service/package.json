@@ -1,6 +1,6 @@
 {
 	"name": "@3sixty/immutable-proof-service",
-	"version": "0.20.0-next.0",
+	"version": "0.20.0-next.1",
 	"description": "Core proof lifecycle service with route helpers for create, get, and verify operations",
 	"repository": {
 		"type": "git",
@@ -39,8 +39,8 @@
 		"@3sixty/entity-storage-models": "next",
 		"@3sixty/event-bus-models": "next",
 		"@3sixty/identity-models": "next",
-		"@3sixty/immutable-proof-models": "0.20.0-next.0",
-		"@3sixty/immutable-proof-task": "0.20.0-next.0",
+		"@3sixty/immutable-proof-models": "0.20.0-next.1",
+		"@3sixty/immutable-proof-task": "0.20.0-next.1",
 		"@3sixty/logging-models": "next",
 		"@3sixty/nameof": "next",
 		"@3sixty/notarization-models": "next",
