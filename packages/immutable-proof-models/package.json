@@ -1,6 +1,6 @@
 {
 	"name": "@3sixty/immutable-proof-models",
-	"version": "0.20.0-next.1",
+	"version": "0.20.0-next.2",
 	"description": "Shared model contracts, schema types, and context constants for immutable proof workflows",
 	"repository": {
 		"type": "git",
