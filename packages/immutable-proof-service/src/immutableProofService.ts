@@ -18,6 +18,7 @@ import { ContextIdHelper, ContextIdKeys, ContextIdStore } from "@3sixty/context"
 import {
 	BaseError,
 	ComponentFactory,
+	DurationConstants,
 	Factory,
 	GeneralError,
 	Guards,
@@ -111,19 +112,19 @@ export class ImmutableProofService implements IImmutableProofComponent, IHealthP
 	 * The default interval in milliseconds to wait between proof task retries.
 	 * @internal
 	 */
-	private static readonly _DEFAULT_TASK_RETRY_INTERVAL: number = 5000;
+	private static readonly _DEFAULT_TASK_RETRY_INTERVAL: number = 5 * DurationConstants.MsPerSecond;
 
 	/**
 	 * The default time in milliseconds to retain the record of a failed proof task, 7 days.
 	 * @internal
 	 */
-	private static readonly _DEFAULT_TASK_FAILURE_RETAIN_FOR: number = 604800000;
+	private static readonly _DEFAULT_TASK_FAILURE_RETAIN_FOR: number = DurationConstants.MsPerWeek;
 
 	/**
 	 * The default idle timeout in milliseconds for the proof task worker, 1 minute.
 	 * @internal
 	 */
-	private static readonly _DEFAULT_TASK_WORKER_IDLE_TIMEOUT: number = 60000;
+	private static readonly _DEFAULT_TASK_WORKER_IDLE_TIMEOUT: number = DurationConstants.MsPerMinute;
 
 	/**
 	 * The default maximum number of proof task workers that can run in parallel.
@@ -141,7 +142,8 @@ export class ImmutableProofService implements IImmutableProofComponent, IHealthP
 	 * The default minimum age in milliseconds before a proof is sweep-eligible, 3 hours.
 	 * @internal
 	 */
-	private static readonly _DEFAULT_SWEEP_STALE_THRESHOLD_MS: number = 10800000;
+	private static readonly _DEFAULT_SWEEP_STALE_THRESHOLD_MS: number =
+		3 * DurationConstants.MsPerHour;
 
 	/**
 	 * The default number of sweep attempts before a proof is parked.
@@ -159,7 +161,7 @@ export class ImmutableProofService implements IImmutableProofComponent, IHealthP
 	 * The default minimum time in milliseconds between sweep attempts for the same proof, 1 hour.
 	 * @internal
 	 */
-	private static readonly _DEFAULT_SWEEP_BACKOFF_MS: number = 3600000;
+	private static readonly _DEFAULT_SWEEP_BACKOFF_MS: number = DurationConstants.MsPerHour;
 
 	/**
 	 * The configuration for the connector.
@@ -454,7 +456,7 @@ export class ImmutableProofService implements IImmutableProofComponent, IHealthP
 				this._config.sweepStaleThresholdMs,
 				validationErrors,
 				undefined,
-				{ minValue: 60000 }
+				{ minValue: DurationConstants.MsPerMinute }
 			);
 		}
 		if (!Is.undefined(this._config.sweepMaxAttempts)) {
@@ -1118,7 +1120,8 @@ export class ImmutableProofService implements IImmutableProofComponent, IHealthP
 		if (Is.stringValue(proofEntity.lastSweepAttempt)) {
 			const backoffMs = this._sweepBackoffMs * Math.pow(2, (proofEntity.sweepAttempts ?? 1) - 1);
 			const nextEligible =
-				new Date(proofEntity.lastSweepAttempt).getTime() + Math.min(backoffMs, 86400000);
+				new Date(proofEntity.lastSweepAttempt).getTime() +
+				Math.min(backoffMs, DurationConstants.MsPerDay);
 			if (nextEligible > Date.now()) {
 				return "skipped";
 			}

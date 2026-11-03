@@ -8,7 +8,15 @@ import {
 	initSchema as initSchemaBackgroundTask
 } from "@3sixty/background-task-service";
 import { ContextIdKeys, ContextIdStore } from "@3sixty/context";
-import { ComponentFactory, Converter, Factory, Is, ObjectHelper, RandomHelper } from "@3sixty/core";
+import {
+	ComponentFactory,
+	Converter,
+	DurationConstants,
+	Factory,
+	Is,
+	ObjectHelper,
+	RandomHelper
+} from "@3sixty/core";
 import { JsonLdProcessor } from "@3sixty/data-json-ld";
 import { entity, EntitySchemaFactory, EntitySchemaHelper, property } from "@3sixty/entity";
 import { MemoryEntityStorageConnector } from "@3sixty/entity-storage-connector-memory";
@@ -37,6 +45,14 @@ import type { ImmutableProof } from "../src/entities/immutableProof.js";
 import type { ImmutableProofV0 } from "../src/entities/immutableProofV0.js";
 import { ImmutableProofService } from "../src/immutableProofService.js";
 import { initSchema } from "../src/schema.js";
+
+const SIXTY_ONE_SECONDS_MS = 61 * DurationConstants.MsPerSecond;
+const FIVE_MINUTES_MS = 5 * DurationConstants.MsPerMinute;
+const TWO_MINUTES_MS = 2 * DurationConstants.MsPerMinute;
+const THIRTY_SECONDS_MS = 30 * DurationConstants.MsPerSecond;
+const NINETY_SECONDS_MS = 90 * DurationConstants.MsPerSecond;
+const EIGHTY_SECONDS_MS = 80 * DurationConstants.MsPerSecond;
+const SEVENTY_SECONDS_MS = 70 * DurationConstants.MsPerSecond;
 
 /**
  * The physical shape of an immutable proof row as it was written before organizationId
@@ -116,7 +132,7 @@ function makeStuckProofEntity(overrides: Partial<ImmutableProof> = {}): Immutabl
 	return {
 		id: "proof-1",
 		organizationId: TEST_ORGANIZATION_IDENTITY,
-		dateCreated: new Date(FIRST_TICK - 61000).toISOString(),
+		dateCreated: new Date(FIRST_TICK - SIXTY_ONE_SECONDS_MS).toISOString(),
 		proofObjectId: "uuid:1234567890",
 		proofObjectIntegrity: "sha256-cou0p7fk7LU5tcc/Hy6qIws8YKV9GAFI13ZNFMwmlEQ=",
 		...overrides
@@ -134,8 +150,8 @@ function makeSweepTaskEntity(overrides: Partial<BackgroundTask> = {}): Backgroun
 		id: "task-1",
 		type: "immutable-proof",
 		threadId: "main",
-		dateCreated: new Date(FIRST_TICK - 61000).toISOString(),
-		dateModified: new Date(FIRST_TICK - 61000).toISOString(),
+		dateCreated: new Date(FIRST_TICK - SIXTY_ONE_SECONDS_MS).toISOString(),
+		dateModified: new Date(FIRST_TICK - SIXTY_ONE_SECONDS_MS).toISOString(),
 		status: TaskStatus.Failed,
 		...overrides
 	};
@@ -282,7 +298,7 @@ describe("ImmutableProofService", () => {
 	test("Can create an instance of the service with boundary sweep options", async () => {
 		const service = new ImmutableProofService({
 			config: {
-				sweepStaleThresholdMs: 60000,
+				sweepStaleThresholdMs: DurationConstants.MsPerMinute,
 				sweepMaxAttempts: 1,
 				sweepBatchLimit: 1,
 				sweepBackoffMs: 1,
@@ -304,7 +320,7 @@ describe("ImmutableProofService", () => {
 			"processProofTask",
 			expect.any(Function),
 			expect.objectContaining({
-				idleShutdownTimeout: 60000,
+				idleShutdownTimeout: DurationConstants.MsPerMinute,
 				initialiseMethod: "processProofTaskStart",
 				shutdownMethod: "processProofTaskEnd"
 			})
@@ -313,7 +329,7 @@ describe("ImmutableProofService", () => {
 		registerHandlerSpy.mockClear();
 
 		const configuredService = new ImmutableProofService({
-			config: { taskWorkerIdleTimeout: 5000 }
+			config: { taskWorkerIdleTimeout: 5 * DurationConstants.MsPerSecond }
 		});
 		await configuredService.start();
 
@@ -323,7 +339,7 @@ describe("ImmutableProofService", () => {
 			"processProofTask",
 			expect.any(Function),
 			expect.objectContaining({
-				idleShutdownTimeout: 5000,
+				idleShutdownTimeout: 5 * DurationConstants.MsPerSecond,
 				initialiseMethod: "processProofTaskStart",
 				shutdownMethod: "processProofTaskEnd"
 			})
@@ -1186,13 +1202,17 @@ describe("ImmutableProofService", () => {
 		const taskStore = await backgroundTaskStorage.getStore();
 		expect(taskStore).toHaveLength(1);
 		expect(taskStore[0].retriesRemaining).toEqual(5);
-		expect(taskStore[0].retryInterval).toEqual(5000);
-		expect(taskStore[0].retainFor).toEqual(604800000);
+		expect(taskStore[0].retryInterval).toEqual(5 * DurationConstants.MsPerSecond);
+		expect(taskStore[0].retainFor).toEqual(DurationConstants.MsPerWeek);
 	});
 
 	test("Can create a proof task with configured retry and retention options", async () => {
 		const service = new ImmutableProofService({
-			config: { taskRetryCount: 2, taskRetryInterval: 1000, taskFailureRetainFor: 60000 }
+			config: {
+				taskRetryCount: 2,
+				taskRetryInterval: DurationConstants.MsPerSecond,
+				taskFailureRetainFor: DurationConstants.MsPerMinute
+			}
 		});
 		await service.start();
 
@@ -1206,8 +1226,8 @@ describe("ImmutableProofService", () => {
 		const taskStore = await backgroundTaskStorage.getStore();
 		expect(taskStore).toHaveLength(1);
 		expect(taskStore[0].retriesRemaining).toEqual(2);
-		expect(taskStore[0].retryInterval).toEqual(1000);
-		expect(taskStore[0].retainFor).toEqual(60000);
+		expect(taskStore[0].retryInterval).toEqual(DurationConstants.MsPerSecond);
+		expect(taskStore[0].retainFor).toEqual(DurationConstants.MsPerMinute);
 	});
 
 	test("Removes the task record once a proof has been issued", async () => {
@@ -1323,7 +1343,7 @@ describe("ImmutableProofService", () => {
 		await backgroundTaskStorage.set(makeSweepTaskEntity({ status: TaskStatus.Failed }));
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1355,7 +1375,7 @@ describe("ImmutableProofService", () => {
 		await backgroundTaskStorage.set(makeSweepTaskEntity({ status: TaskStatus.Processing }));
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1370,13 +1390,13 @@ describe("ImmutableProofService", () => {
 		await proofStorage.set(
 			makeStuckProofEntity({
 				taskId: "background-task:entity-storage:task-1",
-				dateCreated: new Date(FIRST_TICK - 1000).toISOString()
+				dateCreated: new Date(FIRST_TICK - DurationConstants.MsPerSecond).toISOString()
 			})
 		);
 		await backgroundTaskStorage.set(makeSweepTaskEntity({ status: TaskStatus.Failed }));
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1389,13 +1409,16 @@ describe("ImmutableProofService", () => {
 			makeStuckProofEntity({
 				taskId: "background-task:entity-storage:task-1",
 				sweepAttempts: 1,
-				lastSweepAttempt: new Date(FIRST_TICK - 1000).toISOString()
+				lastSweepAttempt: new Date(FIRST_TICK - DurationConstants.MsPerSecond).toISOString()
 			})
 		);
 		await backgroundTaskStorage.set(makeSweepTaskEntity({ status: TaskStatus.Failed }));
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000, sweepBackoffMs: 60000 }
+			config: {
+				sweepStaleThresholdMs: DurationConstants.MsPerMinute,
+				sweepBackoffMs: DurationConstants.MsPerMinute
+			}
 		});
 		await service.start();
 
@@ -1410,15 +1433,15 @@ describe("ImmutableProofService", () => {
 			makeStuckProofEntity({
 				taskId: "background-task:entity-storage:task-1",
 				sweepAttempts: 3,
-				lastSweepAttempt: new Date(FIRST_TICK - 300000).toISOString()
+				lastSweepAttempt: new Date(FIRST_TICK - FIVE_MINUTES_MS).toISOString()
 			})
 		);
 		await backgroundTaskStorage.set(makeSweepTaskEntity({ status: TaskStatus.Failed }));
 
 		const service = new ImmutableProofService({
 			config: {
-				sweepStaleThresholdMs: 60000,
-				sweepBackoffMs: 60000,
+				sweepStaleThresholdMs: DurationConstants.MsPerMinute,
+				sweepBackoffMs: DurationConstants.MsPerMinute,
 				sweepMaxAttempts: 3
 			}
 		});
@@ -1441,7 +1464,7 @@ describe("ImmutableProofService", () => {
 		);
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1462,7 +1485,7 @@ describe("ImmutableProofService", () => {
 
 		const service = new ImmutableProofService({
 			config: {
-				sweepStaleThresholdMs: 60000,
+				sweepStaleThresholdMs: DurationConstants.MsPerMinute,
 				sweepAssumeRetryableBefore: new Date(FIRST_TICK).toISOString()
 			}
 		});
@@ -1480,7 +1503,7 @@ describe("ImmutableProofService", () => {
 		);
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1502,7 +1525,7 @@ describe("ImmutableProofService", () => {
 		});
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1530,7 +1553,7 @@ describe("ImmutableProofService", () => {
 		});
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1560,7 +1583,7 @@ describe("ImmutableProofService", () => {
 		});
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1577,7 +1600,7 @@ describe("ImmutableProofService", () => {
 
 		const service = new ImmutableProofService({
 			config: {
-				sweepStaleThresholdMs: 60000,
+				sweepStaleThresholdMs: DurationConstants.MsPerMinute,
 				sweepAssumeRetryableBefore: new Date(FIRST_TICK).toISOString()
 			}
 		});
@@ -1600,7 +1623,7 @@ describe("ImmutableProofService", () => {
 		);
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1617,8 +1640,8 @@ describe("ImmutableProofService", () => {
 			makeSweepTaskEntity({
 				id: "task-old",
 				status: TaskStatus.Failed,
-				dateCreated: new Date(FIRST_TICK - 120000).toISOString(),
-				dateModified: new Date(FIRST_TICK - 120000).toISOString(),
+				dateCreated: new Date(FIRST_TICK - TWO_MINUTES_MS).toISOString(),
+				dateModified: new Date(FIRST_TICK - TWO_MINUTES_MS).toISOString(),
 				payload: { proofId: `immutable-proof:${proofEntity.id}` }
 			})
 		);
@@ -1626,14 +1649,14 @@ describe("ImmutableProofService", () => {
 			makeSweepTaskEntity({
 				id: "task-new",
 				status: TaskStatus.Processing,
-				dateCreated: new Date(FIRST_TICK - 30000).toISOString(),
-				dateModified: new Date(FIRST_TICK - 30000).toISOString(),
+				dateCreated: new Date(FIRST_TICK - THIRTY_SECONDS_MS).toISOString(),
+				dateModified: new Date(FIRST_TICK - THIRTY_SECONDS_MS).toISOString(),
 				payload: { proofId: `immutable-proof:${proofEntity.id}` }
 			})
 		);
 
 		const service = new ImmutableProofService({
-			config: { sweepStaleThresholdMs: 60000 }
+			config: { sweepStaleThresholdMs: DurationConstants.MsPerMinute }
 		});
 		await service.start();
 
@@ -1651,7 +1674,7 @@ describe("ImmutableProofService", () => {
 
 		const service = new ImmutableProofService({
 			config: {
-				sweepStaleThresholdMs: 60000,
+				sweepStaleThresholdMs: DurationConstants.MsPerMinute,
 				sweepAssumeRetryableBefore: new Date(FIRST_TICK).toISOString()
 			}
 		});
@@ -1668,25 +1691,25 @@ describe("ImmutableProofService", () => {
 		await proofStorage.set(
 			makeStuckProofEntity({
 				id: "proof-a",
-				dateCreated: new Date(FIRST_TICK - 90000).toISOString()
+				dateCreated: new Date(FIRST_TICK - NINETY_SECONDS_MS).toISOString()
 			})
 		);
 		await proofStorage.set(
 			makeStuckProofEntity({
 				id: "proof-b",
-				dateCreated: new Date(FIRST_TICK - 80000).toISOString()
+				dateCreated: new Date(FIRST_TICK - EIGHTY_SECONDS_MS).toISOString()
 			})
 		);
 		await proofStorage.set(
 			makeStuckProofEntity({
 				id: "proof-c",
-				dateCreated: new Date(FIRST_TICK - 70000).toISOString()
+				dateCreated: new Date(FIRST_TICK - SEVENTY_SECONDS_MS).toISOString()
 			})
 		);
 
 		const service = new ImmutableProofService({
 			config: {
-				sweepStaleThresholdMs: 60000,
+				sweepStaleThresholdMs: DurationConstants.MsPerMinute,
 				sweepBatchLimit: 2,
 				sweepAssumeRetryableBefore: new Date(FIRST_TICK).toISOString()
 			}
@@ -1757,7 +1780,7 @@ describe("ImmutableProofService", () => {
 
 		const service = new ImmutableProofService({
 			config: {
-				sweepStaleThresholdMs: 60000,
+				sweepStaleThresholdMs: DurationConstants.MsPerMinute,
 				sweepAssumeRetryableBefore: new Date(FIRST_TICK).toISOString()
 			}
 		});

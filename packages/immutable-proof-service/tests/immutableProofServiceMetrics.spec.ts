@@ -10,6 +10,7 @@ import {
 	AlreadyExistsError,
 	ComponentFactory,
 	Converter,
+	DurationConstants,
 	Factory,
 	Is,
 	RandomHelper
@@ -40,6 +41,8 @@ import { cleanupTestEnv, setupTestEnv, TEST_ORGANIZATION_IDENTITY } from "./setu
 import type { ImmutableProof } from "../src/entities/immutableProof.js";
 import { ImmutableProofService } from "../src/immutableProofService.js";
 import { initSchema } from "../src/schema.js";
+
+const FIVE_SECONDS_MS = 5 * DurationConstants.MsPerSecond;
 
 let proofStorage: MemoryEntityStorageConnector<ImmutableProof>;
 let notarizationStorage: MemoryEntityStorageConnector<Notarization>;
@@ -370,7 +373,7 @@ describe("ImmutableProofService — metrics", () => {
 		await service.create(PROOF_OBJECT);
 
 		// The proof is requested at FIRST_TICK and only processed once the clock has moved on.
-		Date.now = vi.fn().mockImplementation(() => FIRST_TICK + 5000);
+		Date.now = vi.fn().mockImplementation(() => FIRST_TICK + FIVE_SECONDS_MS);
 		mockInlineTaskExecution();
 		await backgroundTaskService.start();
 		await waitForProofGeneration();
@@ -385,7 +388,7 @@ describe("ImmutableProofService — metrics", () => {
 
 		const lagValues = values.filter(v => v.id === "ip_proof_completion_lag");
 		expect(lagValues).toHaveLength(1);
-		expect(lagValues[0].value).toBe(5000);
+		expect(lagValues[0].value).toBe(5 * DurationConstants.MsPerSecond);
 	});
 
 	test("a proof that has not completed emits no ip_proof_completion_lag", async () => {
