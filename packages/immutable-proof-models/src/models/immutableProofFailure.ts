@@ -4,7 +4,6 @@
 /**
  * The failure reason of the proof.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ImmutableProofFailure = {
 	/**
 	 * Proof not yet issued.

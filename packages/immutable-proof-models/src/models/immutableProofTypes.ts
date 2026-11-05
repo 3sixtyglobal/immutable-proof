@@ -4,7 +4,6 @@
 /**
  * The types of immutable proof data.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ImmutableProofTypes = {
 	/**
 	 * Represents Immutable Proof.

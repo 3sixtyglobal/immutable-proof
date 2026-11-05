@@ -6,7 +6,6 @@ import { ImmutableProofMetricIds } from "./immutableProofMetricIds.js";
 /**
  * Metrics registered by the immutable proof service.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ImmutableProofMetrics: ITelemetryMetric[] = [
 	{
 		id: ImmutableProofMetricIds.ProofsCreated,

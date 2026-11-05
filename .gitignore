@@ -12,3 +12,4 @@ coverage
 .env.dev
 vitest.config.ts.timestamp*
 working
+.claude/settings.local.json

@@ -4,7 +4,6 @@
 /**
  * Metric IDs for the immutable proof service.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ImmutableProofMetricIds = {
 	/**
 	 * Number of proofs created.

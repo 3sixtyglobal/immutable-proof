@@ -969,7 +969,7 @@ export class ImmutableProofService implements IImmutableProofComponent, IHealthP
 	 * @internal
 	 */
 	private buildTaskRetryOptions(): {
-		retryCount: number | undefined;
+		retryCount?: number;
 		retryInterval: number;
 		retainFor: number;
 	} {

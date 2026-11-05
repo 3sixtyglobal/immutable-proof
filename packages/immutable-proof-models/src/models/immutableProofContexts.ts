@@ -4,7 +4,6 @@
 /**
  * The contexts of immutable proof data.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ImmutableProofContexts = {
 	/**
 	 * The canonical RDF namespace URI for Immutable Proof.

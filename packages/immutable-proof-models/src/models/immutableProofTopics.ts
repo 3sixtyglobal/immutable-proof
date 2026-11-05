@@ -4,7 +4,6 @@
 /**
  * The topics for immutable proof event bus notifications.
  */
-// eslint-disable-next-line @typescript-eslint/naming-convention
 export const ImmutableProofTopics = {
 	/**
 	 * A proof was created.
