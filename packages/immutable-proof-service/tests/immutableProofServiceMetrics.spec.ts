@@ -1,4 +1,5 @@
 // Copyright 2026 IOTA Stiftung.
+// Copyright 2026 3Sixty Trade Ltd.
 // SPDX-License-Identifier: Apache-2.0.
 import {
 	type BackgroundTask,
@@ -52,7 +53,7 @@ let memoryLoggingEntityStorage: MemoryEntityStorageConnector<LogEntry>;
 
 const FIRST_TICK = 1724327716271;
 
-interface MetricValueEntry {
+interface IMetricValueEntry {
 	id: string;
 	value: "inc" | "dec" | number;
 	customData?: { [key: string]: unknown };
@@ -61,10 +62,10 @@ interface MetricValueEntry {
 function makeMockTelemetry(): {
 	component: ITelemetryComponent;
 	created: ITelemetryMetric[];
-	values: MetricValueEntry[];
+	values: IMetricValueEntry[];
 } {
 	const created: ITelemetryMetric[] = [];
-	const values: MetricValueEntry[] = [];
+	const values: IMetricValueEntry[] = [];
 	const component: ITelemetryComponent = {
 		className: () => "MockTelemetry",
 		start: async () => {},
